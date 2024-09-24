@@ -1,0 +1,259 @@
+Lathund - SignalR demo
+----------------------
+
+1. Terminal, nytt projekt
+
+dotnet new webapp -n signalr-chat
+cd signalr-chat
+
+----------------------
+
+2. Installera SignalR, öppna i VSCode
+
+dotnet add package Microsoft.AspNetCore.SignalR
+
+code .
+
+(säg yes till deps, ruta nere i högra hörnet)
+
+----------------------
+
+3. Skapa SignalR Hub
+
+Ny klass i ny mapp Hubs > ChatHub.cs
+
+namespace signalr_chat.Hubs
+{
+  using Microsoft.AspNetCore.SignalR;
+  using System.Threading.Tasks;
+
+  public class ChatHub : Hub
+  {
+    public async Task SendMessage(string user, string message)
+    {
+      await Clients.All.SendAsync("ReceiveMessage", user, message);
+    }
+  }
+}
+
+----------------------
+
+4. Konfa Program.cs att använda SignalR & mappa hubben
+
+using signalr_chat.Hubs;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+builder.Services.AddSignalR();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error");
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+app.UseDefaultFiles(); // Enables default files (e.g., index.html)
+app.UseStaticFiles(); // Allows serving static files from wwwroot
+app.UseRouting();
+app.UseAuthorization();
+
+app.MapHub<ChatHub>("/chathub");
+
+app.Run();
+
+----------------------
+
+5. Skapa index.html i wwwroot
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SignalR Chat</title>
+  <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="./css/site.css">
+</head>
+
+<body>
+  <div class="container">
+    <div id="chat"></div>
+    <input type="text" id="user" placeholder="Your name" />
+    <input type="text" id="message" placeholder="Type a message..." />
+    <button id="sendBtn" onclick="sendMessage()">Send</button>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.9/signalr.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@2.3.6/dist/purify.min.js"></script>
+  <script src="./js/site.js"></script>
+</body>
+
+</html>
+
+----------------------
+
+6. Fixa site.css / site.js
+body {
+  font-family: Arial, sans-serif;
+  background-color: rgb(200, 200, 200);
+}
+
+#chat {
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  width: auto;
+  height: 400px;
+  overflow-y: scroll;
+}
+
+#message {
+  width: 200px;
+}
+
+input[type=text] {
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input[type=text]:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+button {
+  background-color: #3b82f6;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background-color: #2563eb;
+}
+
+button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.container {
+  border: 5px solid gray;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 10vh;
+  width: 40vw;
+  padding: 2em;
+  background-color: rgb(240, 240, 240);
+}
+
+.message {
+  margin: 5px 0;
+}
+
+.username {
+  font-weight: bold;
+}
+
+--
+
+// connect to SignalR Hub
+const connection = new signalR.HubConnectionBuilder()
+  .withUrl('/chathub')
+  .build();
+
+// elems
+const user = document.getElementById('user');
+const message = document.getElementById('message');
+const chat = document.getElementById('chat');
+const sendBtn = document.getElementById('sendBtn');
+
+// toggle send btn state
+const toggleButtonState = () => {
+  sendBtn.disabled = !user.value || !message.value;
+}
+
+// on page load
+toggleButtonState();
+user.addEventListener('input', toggleButtonState);
+message.addEventListener('input', toggleButtonState);
+
+// conn to wsocket
+connection.start().then(() => {
+  console.log('Connected to the hub.');
+}).catch(function (err) {
+  return console.error(err.toString());
+});
+
+// send msg binded to btn
+function sendMessage() {
+  try {
+    connection.invoke('SendMessage', user.value, message.value);
+    message.value = '';
+  } catch (err) {
+    console.error(err.toString());
+  }
+}
+
+// receive msgs from server, sanitize, DOM manipulate
+connection.on('ReceiveMessage', (user, message) => {
+  const newMessage = document.createElement('div');
+  const domPurifyConf = { ALLOWED_TAGS: ['b'] };
+  const sanitizedUser = DOMPurify.sanitize(user, domPurifyConf);
+  const sanitizedMessage = DOMPurify.sanitize(message, domPurifyConf);
+
+  newMessage.classList.add('message');
+  newMessage.innerHTML = `<span class='username'>${sanitizedUser}:</span> ${sanitizedMessage}`;
+  chat.appendChild(newMessage);
+  chat.scrollTop = chat.scrollHeight;
+});
+
+------------------------------------
+
+För att köra applikationen (i terminal):
+
+dotnet run
+
+Gå till http://localhost:[port] i förslagsvis Chrome
+Öppna upp ett inkognitofönster för att chatta med dig själv, med fokus i webbläsaren Ctrl+Shift+N eller ⋮ och välj New Incog Window
+
+------------------------------------
+
+För att konfa HTTPS, ett self-signat cert för lokal miljö (i terminal):
+
+dotnet dev-certs https --trust
+
+https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-dev-certs
+
+För prod använder du en SSL-cert från en betrodd CA som Let’s Encrypt.
+Du kan använda Certbot för att generera certifikatet och sedan konvertera det till en .pfx-fil om behövs.
+Ladda in sen .pfx-filen i din appsettings.json
+
+------------------------------------
+
+Lägg till i er Startup/Program.cs att köra över HTTPS, matcha mot de portar ni har i er launchSettings.json:
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(5125);
+    options.ListenAnyIP(7193, listenOptions =>
+    {
+        listenOptions.UseHttps();
+    });
+});
