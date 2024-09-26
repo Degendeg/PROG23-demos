@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>💬/Chat</title>
+  <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastify-js/1.6.1/toastify.min.css" />
+  <link rel="stylesheet" href="./css/site.css">
+</head>
+
+<body>
+  <div class="container">
+    <div id="chat"></div>
+    <span class="logout" onclick="logOut()">&times;</span>
+    <div class="wrapper">
+      <label id="user">Username: </label>
+      <input type="text" id="message" onkeydown="checkAndSendMessage(event)" placeholder="Type a message..." />
+      <button id="sendBtn" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.9/signalr.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@2.3.6/dist/purify.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastify-js/1.6.1/toastify.min.js"></script>
+  <script src="./js/chat.js"></script>
+</body>
+
+</html>
