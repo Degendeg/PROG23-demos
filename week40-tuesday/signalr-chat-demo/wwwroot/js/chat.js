@@ -12,6 +12,7 @@ let connection = null;
 // check if token is present, decode and grab name otherwise dont allow chat
 if (token) {
   const decodedJwt = JSON.parse(atob(token.split('.')[1]));
+  sessionStorage.setItem('username', decodedJwt.unique_name);
   user.innerText += decodedJwt.unique_name;
   connection = new signalR.HubConnectionBuilder()
     .withUrl('/chathub', { accessTokenFactory: () => token })
@@ -76,7 +77,7 @@ connection.on('ReceiveMessage', (user, message) => {
   const sanitizedMessage = DOMPurify.sanitize(message, domPurifyConf);
 
   newMessage.classList.add('message');
-  newMessage.innerHTML = `<span class='username'>${sanitizedUser}:</span> ${sanitizedMessage}`;
+  newMessage.innerHTML = `<span class='username'>${sanitizedUser}</span> ${sanitizedMessage}`;
   chat.appendChild(newMessage);
   chat.scrollTop = chat.scrollHeight;
 });

@@ -87,10 +87,33 @@ button:disabled {
 
 .username {
   font-weight: bold;
+  cursor: pointer;
 }
 
 .clearfix {
   margin: 10px;
+}
+
+#conversations {
+  background: rgb(156 168 173);
+  float: right;
+  position: absolute;
+  top: 0;
+  right: 1vw;
+  width: 20vw;
+}
+
+#privateMessage {
+  width: 75%;
+}
+
+.chat-window {
+  height: 200px;
+  background: #fff;
+  overflow-y: scroll;
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin-bottom: 10px;
 }
 
 .loader-backdrop {

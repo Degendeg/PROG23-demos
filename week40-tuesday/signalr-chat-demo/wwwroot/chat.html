@@ -20,11 +20,18 @@
       <button id="sendBtn" onclick="sendMessage()">Send</button>
     </div>
   </div>
+  <div id="conversations" class="container" style="display: none;">
+    <span class="logout" onclick="closePrivateChat()">&times;</span>
+    <div id="chat-window" class="chat-window"></div>
+    <input type="text" id="privateMessage" placeholder="Type a message..." />
+    <button id="sendPrivateBtn" onclick="sendPrivateMessage()">Send</button>
+  </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.9/signalr.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@2.3.6/dist/purify.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/toastify-js/1.6.1/toastify.min.js"></script>
   <script src="./js/chat.js"></script>
+  <script src="./js/conversations.js"></script>
 </body>
 
 </html>

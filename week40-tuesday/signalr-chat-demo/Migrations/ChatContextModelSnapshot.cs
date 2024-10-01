@@ -23,6 +23,9 @@ namespace signalrchatdemo.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<Guid?>("ConversationId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Message")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -36,7 +39,28 @@ namespace signalrchatdemo.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ConversationId");
+
                     b.ToTable("ChatMessages");
+                });
+
+            modelBuilder.Entity("signalr_chat.Models.Conversation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Participant1")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Participant2")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Conversations");
                 });
 
             modelBuilder.Entity("signalr_chat.Models.User", b =>
@@ -56,6 +80,18 @@ namespace signalrchatdemo.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("signalr_chat.Models.ChatMessage", b =>
+                {
+                    b.HasOne("signalr_chat.Models.Conversation", null)
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId");
+                });
+
+            modelBuilder.Entity("signalr_chat.Models.Conversation", b =>
+                {
+                    b.Navigation("Messages");
                 });
 #pragma warning restore 612, 618
         }

@@ -31,7 +31,7 @@ async function login() {
         text: data.message,
         duration: 2000,
       }).showToast();
-      setTimeout(() => window.location.href = '/chat.html', 3000);
+      setTimeout(() => window.location.href = '/chat.html', 666);
     } else {
       Toastify({
         text: "Username or password is incorrect, try again.",
