@@ -21,13 +21,28 @@ namespace signalr_chat.Hubs
       if (Context.User?.Identity != null && Context.User.Identity.IsAuthenticated)
       {
         var messages = _context.ChatMessages
+            .Where(m => m.ConversationId == null)
             .OrderBy(m => m.Timestamp)
             .Take(50) // Limit to last 50 messages
             .ToList();
 
         foreach (var message in messages)
         {
-          await Clients.Caller.SendAsync("ReceiveMessage", message.Username, message.Message);
+          string finalMessage;
+
+          if (IsBase64String(message.Message))
+          {
+            // Om meddelandet är krypterat, försök dekryptera det
+            finalMessage = EncryptionHelper.Decrypt(message.Message);
+          }
+          else
+          {
+            // Om meddelandet inte är krypterat, använd det som det är
+            finalMessage = message.Message;
+          }
+
+          // Skicka meddelandet till klienten
+          await Clients.Caller.SendAsync("ReceiveMessage", message.Username, finalMessage);
         }
       }
       else
@@ -39,11 +54,12 @@ namespace signalr_chat.Hubs
 
     public async Task SendMessage(string user, string message)
     {
+      var encryptedMessage = EncryptionHelper.Encrypt(message);
       // Save message to database
       var chatMessage = new ChatMessage
       {
         Username = user,
-        Message = message
+        Message = encryptedMessage
       };
 
       _context.ChatMessages.Add(chatMessage);
@@ -53,6 +69,39 @@ namespace signalr_chat.Hubs
       await Clients.All.SendAsync("ReceiveMessage", user, message);
     }
 
+    public async Task SendPrivateMessage(Guid conversationId, string message)
+    {
+      var currentUser = Context.User?.Identity?.Name;
+      var users = _context.Users.ToList();
+      var conversation = _context.Conversations.Find(conversationId);
+
+      if (conversation != null && currentUser != null)
+      {
+        var encryptedMessage = EncryptionHelper.Encrypt(message);
+        // Save the message in the convo
+        var chatMessage = new ChatMessage
+        {
+          Username = currentUser,
+          ConversationId = conversationId,
+          Message = encryptedMessage,
+          Timestamp = DateTime.UtcNow
+        };
+
+        conversation.Messages.Add(chatMessage);
+        await _context.SaveChangesAsync();
+
+        // Get the list of all users
+        var allUsers = _context.Users.Select(u => u.Username).ToList();
+
+        // Create a list of users that are outside the conversation
+        var usersOutsideConvo = allUsers
+            .Where(u => u != conversation.Participant1 && u != conversation.Participant2)
+            .ToList();
+
+        // Send the message to all users except those outside the conversation
+        await Clients.AllExcept(usersOutsideConvo).SendAsync("ReceivePrivateMessage", conversation.Id, currentUser, message);
+      }
+    }
     public async Task StartPrivateChat(string targetUser)
     {
       var currentUser = Context.User?.Identity?.Name;
@@ -78,7 +127,7 @@ namespace signalr_chat.Hubs
       var messages = _context.ChatMessages
           .Where(m => m.ConversationId == conversation.Id)
           .OrderBy(m => m.Timestamp)
-          .Select(m => new
+          .Select(m => new ChatMessageDto
           {
             Username = m.Username,
             Message = m.Message,
@@ -86,43 +135,24 @@ namespace signalr_chat.Hubs
           })
           .ToList();
 
+      foreach (var message in messages)
+      {
+        message.Message = EncryptionHelper.Decrypt(message.Message);
+      }
+
       // Send conversation and message history to the caller
       await Clients.Caller.SendAsync("OpenPrivateChat", conversation.Id, targetUser, messages);
       // Notify the target user to open the same chat
       await Clients.User(targetUser).SendAsync("OpenPrivateChat", conversation.Id, currentUser, messages);
     }
 
-    public async Task SendPrivateMessage(Guid conversationId, string message)
+
+    private static bool IsBase64String(string base64)
     {
-      var currentUser = Context.User?.Identity?.Name;
-      var users = _context.Users.ToList();
-      var conversation = _context.Conversations.Find(conversationId);
-
-      if (conversation != null && currentUser != null)
-      {
-        // Save the message in the convo
-        var chatMessage = new ChatMessage
-        {
-          Username = currentUser,
-          ConversationId = conversationId,
-          Message = message,
-          Timestamp = DateTime.UtcNow
-        };
-
-        conversation.Messages.Add(chatMessage);
-        await _context.SaveChangesAsync();
-
-        // Get the list of all users
-        var allUsers = _context.Users.Select(u => u.Username).ToList();
-
-        // Create a list of users that are outside the conversation
-        var usersOutsideConvo = allUsers
-            .Where(u => u != conversation.Participant1 && u != conversation.Participant2)
-            .ToList();
-
-        // Send the message to all users except those outside the conversation
-        await Clients.AllExcept(usersOutsideConvo).SendAsync("ReceivePrivateMessage", conversation.Id, currentUser, message);
-      }
+      // Kontrollera att strängen är delbar med 4 och endast innehåller giltiga Base64-tecken
+      Span<byte> buffer = new Span<byte>(new byte[base64.Length]);
+      return base64.Length % 4 == 0 && Convert.TryFromBase64String(base64, buffer, out _);
     }
+
   }
 }

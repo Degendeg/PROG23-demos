@@ -124,21 +124,3 @@ public class AuthController : ControllerBase
     return tokenHandler.WriteToken(token);
   }
 }
-
-public class UserDto
-{
-  public required string Username { get; set; }
-  public required string Password { get; set; }
-  public required string ConfirmPassword { get; set; }
-}
-
-public class LoginDto
-{
-  public required string Username { get; set; }
-  public required string Password { get; set; }
-}
-
-public class GoogleSignInDto
-{
-  public required string Token { get; set; }
-}
