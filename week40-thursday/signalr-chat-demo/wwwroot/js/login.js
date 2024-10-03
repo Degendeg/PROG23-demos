@@ -46,3 +46,43 @@ async function login() {
     }).showToast();
   }
 }
+
+async function handleGoogleSignIn(response) {
+  try {
+    // Extract the token from Google's response
+    const googleToken = response.credential;
+
+    // Send the Google token to your backend
+    const serverResponse = await fetch('/api/auth/google-callback', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ token: googleToken })
+    });
+
+    if (serverResponse.ok) {
+      const data = await serverResponse.json();
+      sessionStorage.setItem('jwtToken', data.token);
+
+      Toastify({
+        text: "Google login successful",
+        duration: 2000,
+      }).showToast();
+
+      // Redirect to chat page
+      setTimeout(() => window.location.href = '/chat.html', 666);
+    } else {
+      Toastify({
+        text: "Google login failed, try again.",
+        duration: 3000,
+      }).showToast();
+    }
+  } catch (error) {
+    console.error('Error during Google login:', error);
+    Toastify({
+      text: "An error occurred. Please try again.",
+      duration: 3000
+    }).showToast();
+  }
+}
