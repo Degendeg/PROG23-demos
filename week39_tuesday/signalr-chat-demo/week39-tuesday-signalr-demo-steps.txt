@@ -68,6 +68,15 @@ app.Run();
 
 ----------------------
 
+npm create vite@latest i wwwroot, döp till valfritt
+flytta ut innehållet från mappen till wwwroot
+npm i
+följt av npm i tailwindcss@latest @tailwindcss/vite@latest daisyui@latest @microsoft/signalr dompurify
+i vite.config.js: lägg till tailwindcss()
+ta bort innehåll i index.css och kör: @import "tailwindcss"; @plugin "daisyui";
+
+----------------------
+
 5. Skapa index.html i wwwroot
 <!DOCTYPE html>
 <html lang="en">
